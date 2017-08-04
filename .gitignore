@@ -1,0 +1,5 @@
+*.out
+*.pyo
+*.pyc
+*.exe
+tags
