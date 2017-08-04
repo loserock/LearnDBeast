@@ -3,3 +3,7 @@
 *.pyc
 *.exe
 tags
+*.vcxproj
+*.vcproj
+*.sln
+*.sdf

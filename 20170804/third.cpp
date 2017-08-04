@@ -35,6 +35,7 @@ class SimpleTree
         if (it != _farests.end())
             return it->second;
         // TODO seek and cash the result, and return with it
+        // can be useful: http://www.geeksforgeeks.org/find-longest-path-directed-acyclic-graph/
     }
 };
 
