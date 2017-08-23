@@ -7,3 +7,8 @@ tags
 *.vcproj
 *.sln
 *.sdf
+input*.txt
+out*.txt
+*.bin
+*.o
+*.pdb

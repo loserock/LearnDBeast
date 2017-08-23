@@ -1,0 +1,20 @@
+0
+0
+         512642 function calls in 0.859 seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 bisect.py:1(<module>)
+        1    0.297    0.297    0.857    0.857 extra.py:15(runAlwaysOrdered)
+        1    0.001    0.001    0.859    0.859 extra.py:4(<module>)
+        1    0.001    0.001    0.858    0.858 extra.py:8(main)
+   112634    0.071    0.000    0.071    0.000 {_bisect.bisect_left}
+    35000    0.257    0.000    0.257    0.000 {_bisect.insort_left}
+    65001    0.021    0.000    0.021    0.000 {len}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+   100000    0.062    0.000    0.062    0.000 {method 'split' of 'str' objects}
+   100001    0.028    0.000    0.028    0.000 {method 'strip' of 'str' objects}
+   100001    0.121    0.000    0.121    0.000 {raw_input}
+
+
