@@ -44,13 +44,17 @@ int main()
 
         int targetX = nextCheckpointX;
         int targetY = nextCheckpointY;
-
-        //TODO add angle check to speed
-        int thrust = nextCheckpointDist > 150 ? 100 : 50;
+        int thrust = 0;
         if (nextCheckpointDist < 20)
             thrust = 0;
         else if (nextCheckpointDist < 75)
             thrust = 25;
+        else if (nextCheckpointDist < 150)
+            thrust = 50;
+        else if (nextCheckpointAngle > 75 || nextCheckpointAngle < -75)
+            thrust = 25;
+        else
+            thrust = 100;
 
         // You have to output the target position
         // followed by the power (0 <= thrust <= 100)
