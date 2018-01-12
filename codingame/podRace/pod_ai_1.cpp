@@ -26,6 +26,8 @@ int main()
 
     vector<Point> checkpointList;
     checkpointList.reserve(5);
+    
+    int boost_left = 1;
 
     // game loop
 
@@ -45,21 +47,34 @@ int main()
         int targetX = nextCheckpointX;
         int targetY = nextCheckpointY;
         int thrust = 0;
-        if (nextCheckpointDist < 20)
-            thrust = 0;
-        else if (nextCheckpointDist < 75)
+        if (nextCheckpointAngle > 90 || nextCheckpointAngle < -90)
+            thrust = 1;
+        else if (nextCheckpointDist < 500)
+            thrust = 5;
+        else if (nextCheckpointDist < 1000)
             thrust = 25;
-        else if (nextCheckpointDist < 150)
+        else if (nextCheckpointDist < 2000)
             thrust = 50;
-        else if (nextCheckpointAngle > 75 || nextCheckpointAngle < -75)
-            thrust = 25;
+        else if (nextCheckpointAngle > 60 || nextCheckpointAngle < -60)
+            thrust = 50;
+        else if (nextCheckpointAngle > 30 || nextCheckpointAngle < -30)
+            thrust = 75;
         else
             thrust = 100;
+            
+        string thrust_text = to_string(thrust);
+        
+        if (boost_left > 0 && (nextCheckpointAngle < 5 && nextCheckpointAngle > -5) && nextCheckpointDist > 5000)
+        {
+            --boost_left;
+            thrust_text = "BOOST";
+            cerr << "now BOOST" << endl;
+        }
 
         // You have to output the target position
         // followed by the power (0 <= thrust <= 100)
         // i.e.: "x y thrust"
 
-        cout << targetX << " " << targetY << " " << thrust << endl;
+        cout << targetX << " " << targetY << " " << thrust_text << endl;
     }
 }
