@@ -51,23 +51,26 @@ int main()
         cerr    << "Turn " << ++gameTurn << " inputs:" << endl
                 << firstInput << " " << secondInput << " " << thirdInput << " " << fourthInput << endl;
         cerr    << "Turn " << gameTurn << " positions:" << endl;
+        
         for (int i = 0; i < thirdInitInput; i++)
         {
             int fifthInput;
             int sixthInput;
+            cin >> fifthInput >> sixthInput; cin.ignore();
+            Coord pos{fifthInput, sixthInput};
             if (gameTurn > 1)
             {
-                lastMove
+                lastMove[i] = pos - positions[i];
             }
-            cin >> fifthInput >> sixthInput; cin.ignore();
-            cerr << fifthInput << " " << sixthInput << endl;
+            positions[i] = pos;
+            cerr << positions[i].x << " " << positions[i].y << " diff: " << lastMove[i].x << " " << lastMove[i].y << endl;
         }
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;
         
         // Output: "A, B, C, D or E"
-        // A -> X+
+        // A -> X+  ???
         cout << "E" << endl;
     }
 }
