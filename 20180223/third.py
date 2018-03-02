@@ -12,10 +12,27 @@ def waysToGiveACheck(board):
     bKingRow, bKingCol = findOneOnBoard('k', board)
     relRow = bKingRow - 0  # black king's relative row position from promoted pawn
     for pawnCol in promotablePawns(board):
-        relCol = bKingCol - pawnCol
-        # TODO shall find valid checks given by an other officer after
-        #      pawns step
+        relCol = bKingCol - pawnCol # black king's relative col position from promoted pawn
+        # TODO shall find valid checks given by another officer
+        #      after pawns step
+        autoCheck = False
+        # bKingRow==1 and (R or Q) in raw 1 : is anything between R/Q and k?
+        if bKingRow == 1:
+            for col in range(bKingCol, (-1 if relCol > 0 else 8), (-1 if relCol > 0 else +1)):
+                if col == pawnCol or col == bKingCol:
+                    continue
+                field = board[1][col]
+                if field == '#':
+                    continue
+                elif field == 'R' or field == 'Q':
+                    autoCheck = True
+                else:
+                    break
+        # TODO also shall check diagonal check positions!
         if (0):
+            pass
+        # check by another officer after pawn step
+        if autoCheck:
             numberOfWays += 4
             continue
         # find check by knight
