@@ -13,10 +13,10 @@ def waysToGiveACheck(board):
     relRow = bKingRow - 0  # black king's relative row position from promoted pawn
     for pawnCol in promotablePawns(board):
         relCol = bKingCol - pawnCol # black king's relative col position from promoted pawn
-        # TODO shall find valid checks given by another officer
-        #      after pawns step
+        # shall find valid checks given by another officer
+        # after pawn step
         autoCheck = False
-        # bKingRow==1 and (R or Q) in raw 1 : is anything between R/Q and k?
+        # find check by line position
         if bKingRow == 1:
             for col in range(bKingCol, (-1 if relCol > 0 else 8), (-1 if relCol > 0 else +1)):
                 if col == pawnCol or col == bKingCol:
@@ -24,14 +24,20 @@ def waysToGiveACheck(board):
                 field = board[1][col]
                 if field == '#':
                     continue
-                elif field == 'R' or field == 'Q':
-                    autoCheck = True
+                elif field in {'R', 'Q'}:
+                    autoCheck |= True
                 else:
                     break
-        # TODO also shall check diagonal check positions!
-        if (0):
-            pass
-        # check by another officer after pawn step
+        # also find check by diagonal positions
+        _diagChkDir = 0
+        if relCol == (relRow-1) and pawnCol > 0 and (board[0][pawnCol - 1] in {'B', 'Q'}):
+            _diagChkDir = +1
+        elif -relCol == (relRow-1) and pawnCol < 7 and (board[0][pawnCol + 1] in {'B', 'Q'}):
+            _diagChkDir = -1
+        if _diagChkDir != 0:
+            if len({r for r, c in zip(xrange(2, bKingRow), xrange(pawnCol + _diagChkDir, bKingCol, _diagChkDir)) if board[r][c] != '#'}) == 0:
+                autoCheck |= True
+        # if check given by another officer after pawn step
         if autoCheck:
             numberOfWays += 4
             continue
