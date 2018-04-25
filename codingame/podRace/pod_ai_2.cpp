@@ -103,7 +103,7 @@ struct PodData
 static void fillExtraPodData(PodData & pod, const PodData * prevState = nullptr)
 {
     pod.speed = len(pod.steering);
-    pod.dirNorm = RotateWithAngle({+100,0}, -pod.dirAngle);
+    pod.dirNorm = RotateWithAngle({+100,0}, pod.dirAngle);
     // TODO calculate extra datas from prev state, eg. acceleration, realSteering
     if (prevState)
     {
@@ -117,6 +117,7 @@ int main()
     vector<Point> checkpointList;
     checkpointList.reserve(8);
     int numOfLaps = 0;
+    int turn = 0;
 
     vector<PodData> podList(2);
     vector<PodData> oppList(2);
@@ -134,7 +135,11 @@ int main()
     for (auto & checkpoint : checkpointList)
         cin >> checkpoint.x >> checkpoint.y;
     for (auto & pod : podList)
+    {
         pod.boostLeft = 1;
+        // TODO test and fix basic starting angle
+        pod.dirAngle = angle(checkpointList[0] - *checkpointList.crbegin(), {100, 0});
+    }
 
     // game loop
 
@@ -171,6 +176,7 @@ int main()
             Point nextCheckRelPos = nextCheckPos - pod.pos;
             int nextCheckDist = len(nextCheckRelPos);
             cerr << "Pod heading vec: " << pod.dirNorm.x << " " << pod.dirNorm.y << endl;
+            cerr << "Pod angle: " << pod.dirAngle << endl;
             cerr << "Pod real speed vec: " << pod.steering.x << " " << pod.steering.y << endl;
             cerr << "Pod speed: " << pod.speed << endl;
 
@@ -192,9 +198,12 @@ int main()
 
             int thrust = 0;
             int nextCheckRelAngle = angle(pod.dirNorm, nextCheckRelPos);
+            cerr << "next CheckPt rel dir: " << nextCheckRelPos.x << " " << nextCheckRelPos.y << endl;
             cerr << "next CheckPt rel angle: " << nextCheckRelAngle << endl;
 
-            if (abs(nextCheckRelAngle) > 90)
+            if (turn < 2)
+                thrust = 100;
+            else if (abs(nextCheckRelAngle) > 90)
                 thrust = 1;
             else if (nextCheckDist < 500)
                 thrust = 25;
@@ -236,5 +245,6 @@ int main()
         {
             cout << pod.target.x << " " << pod.target.y << " " << pod.thrustText << endl;
         }
+        ++turn;
     }
 }
