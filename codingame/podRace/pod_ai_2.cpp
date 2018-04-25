@@ -86,135 +86,152 @@ Point RotateWithAngle(const Point p, const int angle)
     return {p.x * cs - p.y * sn, p.x * sn + p.y * cs};
 }
 
+struct PodData
+{
+    Point pos{UNDEF_INT, UNDEF_INT};
+    Point steering{UNDEF_INT, UNDEF_INT};
+    int dirAngle{-1};
+    int nextCheckId{0};
+    int speed{-1};
+    int boostLeft{-1};
+    Point target{UNDEF_INT, UNDEF_INT};
+    bool checkpointReached = false;
+    string thrustText;
+};
+
+static void fillExtraPodData(PodData & pod, const PodData * prevState = nullptr)
+{
+    pod.speed = len(pod.steering);
+
+    // TODO calculate extra datas from prev state, eg. acceleration, realSteering
+    if (prevState)
+    {
+        pod.checkpointReached = (pod.nextCheckId != prevState->nextCheckId);
+    }
+}
+
 int main()
 {
 
     vector<Point> checkpointList;
-    checkpointList.reserve(5);
+    checkpointList.reserve(8);
+    int numOfLaps = 0;
 
-    Point podLastPos{UNDEF_INT, UNDEF_INT};
-    Point lastCheckPos{UNDEF_INT, UNDEF_INT};
-    Point afterNextCheckPos{UNDEF_INT, UNDEF_INT};
-    int boost_left = 1;
-    int numOfCircle = 0;
-    int numOfCheck = 0;
+    vector<PodData> podList(2);
+    vector<PodData> oppList(2);
+
+    // Point podLastPos{UNDEF_INT, UNDEF_INT};
+    // Point lastCheckPos{UNDEF_INT, UNDEF_INT};
+    // Point afterNextCheckPos{UNDEF_INT, UNDEF_INT};
+
+    // init data
+
+    cin >> numOfLaps;
+    size_t numOfChecks;
+    cin >> numOfChecks;
+    checkpointList.resize(numOfChecks, {UNDEF_INT, UNDEF_INT});
+    for (auto & checkpoint : checkpointList)
+        cin >> checkpoint.x >> checkpoint.y;
+    for (auto & pod : podList)
+        pod.boostLeft = 1;
 
     // game loop
 
     while (1)
     {
-        int x, y; //< x, y position of the pod
-        int nextCheckpointX, nextCheckpointY; //< x, y position of the next check point
-        int nextCheckpointDist; //< distance to the next checkpoint
-        int nextCheckpointAngle; //< angle between your pod orientation and the direction of the next checkpoint
-        cin >> x >> y >> nextCheckpointX >> nextCheckpointY >> nextCheckpointDist >> nextCheckpointAngle; cin.ignore();
-        int opponentX, opponentY; //< //< x, y position of the opponent's pod
-        cin >> opponentX >> opponentY; cin.ignore();
+        // input data
+
+        for (auto & pod : podList)
+        {
+            PodData _prevState = pod;
+            cin >> pod.pos.x >> pod.pos.y >> pod.steering.x >> pod.steering.y >> pod.dirAngle >> pod.nextCheckId;
+            fillExtraPodData(pod, &_prevState);
+        }
+        for (auto & opp : oppList)
+        {
+            PodData _prevState = opp;
+            cin >> opp.pos.x >> opp.pos.y >> opp.steering.x >> opp.steering.y >> opp.dirAngle >> opp.nextCheckId;
+            fillExtraPodData(opp, &_prevState);
+        }
 
         // Write an action using cout. DON'T FORGET THE "<< endl"
         // To debug: cerr << "Debug messages..." << endl;
         
-        Point podPos = {x, y};
-        if (podLastPos == Point{UNDEF_INT, UNDEF_INT})
-            podLastPos = podPos;
-        Point podSteering = podPos - podLastPos;
-        int podSpeed = len(podSteering);
-        Point oppPos = {opponentX, opponentY};
-        Point oppRelPos = oppPos - podPos;
-        int oppDist = len(oppRelPos);
-        Point nextCheckPos = {nextCheckpointX, nextCheckpointY};
-
-        // handling checkpoint storage
-        if (lastCheckPos == Point{UNDEF_INT, UNDEF_INT})
-            lastCheckPos = nextCheckPos;
-        bool checkpointReached = (nextCheckPos != lastCheckPos);
-        if (checkpointReached)
+        for (auto & pod : podList)
         {
-            if (numOfCircle <= 0 && find(checkpointList.begin(), checkpointList.end(), lastCheckPos) == checkpointList.end())
+            // basic AI from pod_ai_1.cpp
+
+            auto oppClosest = min_element(oppList.cbegin(), oppList.cend(),
+                [&pod](const PodData &p1, const PodData &p2) { return len(p1.pos - pod.pos) < len(p2.pos - pod.pos); });
+            Point oppRelPos = oppClosest->pos - pod.pos;
+            int oppDist = len(oppRelPos);
+            const Point nextCheckPos = checkpointList[pod.nextCheckId];
+            const Point afterNextCheckPos = (pod.nextCheckId < numOfChecks - 1 ? checkpointList[pod.nextCheckId + 1] : checkpointList[0]);
+            Point nextCheckRelPos = nextCheckPos - pod.pos;
+            int nextCheckDist = len(nextCheckRelPos);
+            cerr << "Pod speed vec: " << pod.steering.x << " " << pod.steering.y << endl;
+            cerr << "Pod speed: " << pod.speed << endl;
+
+            pod.target = nextCheckPos;
+            bool doShield = false;
+            // optimizing target position:
+            if (nextCheckDist > 1000)
             {
-                checkpointList.push_back(lastCheckPos);
-                if (find(checkpointList.begin(), checkpointList.end(), nextCheckPos) != checkpointList.end())
-                {
-                    numOfCircle++;
-                    numOfCheck = 0;
-                }
+                Point reqSteering = normWithMul(nextCheckRelPos, pod.speed);
+                Point correction = reqSteering - pod.steering;
+                pod.target += correction;
             }
+            else if (nextCheckDist < 800 /* && pod steering toward the next checkpoint */)
+            {
+                pod.target = afterNextCheckPos;
+                if (oppDist < 600)
+                    doShield = true;
+            }
+
+            int thrust = 0;
+            int nextCheckRelAngle = angle(pod.steering, nextCheckRelPos);
+
+            if (abs(nextCheckRelAngle) > 90)
+                thrust = 1;
+            else if (nextCheckDist < 500)
+                thrust = 25;
+            else if (nextCheckDist < 1000)
+                thrust = 50;
+            else if (nextCheckDist < 2000)
+                thrust = 75;
+            else if (abs(nextCheckRelAngle) > 60)
+                thrust = 50;
+            else if (abs(nextCheckRelAngle) > 30)
+                thrust = 75;
             else
+                thrust = 100;
+
+            pod.thrustText = to_string(thrust);
+
+            bool doBoost = pod.boostLeft > 0 && abs(nextCheckRelAngle) < 5 && nextCheckDist > 5000;
+            doBoost &= !(oppDist < 2000 && abs(angle(pod.steering, oppRelPos)) < 30);
+            if (doBoost)
             {
-                if (numOfCheck >= checkpointList.size() - 1)
-                {
-                    numOfCheck = 0;
-                    numOfCircle++;
-                }
-                else
-                    numOfCheck++;
+                --pod.boostLeft;
+                pod.thrustText = "BOOST";
+                cerr << "now BOOST" << endl;
             }
-            if (numOfCircle > 0)
-                afterNextCheckPos = (numOfCheck < checkpointList.size() - 1 ? checkpointList[numOfCheck + 1] : checkpointList[0]);
-            lastCheckPos = nextCheckPos;
-        }
-
-        Point nextCheckRelPos = nextCheckPos - podPos;
-        Point podDir = normWithMul(RotateWithAngle(nextCheckRelPos, -nextCheckpointAngle), 100.0);
-        // TODO Point podAngle = 
-        cerr << "Pod heading vec: " << podDir.x << " " << podDir.y << endl;
-        cerr << "Pod real steering vec: " << podSteering.x << " " << podSteering.y << endl;
-        cerr << "Pod speed: " << podSpeed << endl;
-        
-        Point target = nextCheckPos;
-        bool doShield = false;
-        // optimizing target position:
-        if (nextCheckpointDist > 1000)
-        {
-            Point reqSteering = normWithMul(nextCheckRelPos, len(podSteering));
-            Point correction = reqSteering - podSteering;
-            target += correction;
-        }
-        else if (numOfCircle > 0 && nextCheckpointDist < 1000 /* && pod steering toward the next checkpoint */)
-        {
-            target = afterNextCheckPos;
-            if (len(oppRelPos) < 600)
-                doShield = true;
-        }
-
-        int thrust = 0;
-
-        if (abs(nextCheckpointAngle) > 90)
-            thrust = 1;
-        else if (nextCheckpointDist < 500)
-            thrust = 25;
-        else if (nextCheckpointDist < 1000)
-            thrust = 50;
-        else if (nextCheckpointDist < 2000)
-            thrust = 75;
-        else if (abs(nextCheckpointAngle) > 60)
-            thrust = 50;
-        else if (abs(nextCheckpointAngle) > 30)
-            thrust = 75;
-        else
-            thrust = 100;
-            
-        string thrust_text = to_string(thrust);
-        
-        bool doBoost = boost_left > 0 && abs(nextCheckpointAngle) < 5 && nextCheckpointDist > 5000;
-        doBoost &= !(oppDist < 2000 && abs(angle(podSteering, oppRelPos)) < 30);
-        if (doBoost)
-        {
-            --boost_left;
-            thrust_text = "BOOST";
-            cerr << "now BOOST" << endl;
-        }
-        else if (doShield)
-        {
-            thrust_text = "SHIELD";
-            cerr << "now SHIELD" << endl;
+            else if (doShield)
+            {
+                pod.thrustText = "SHIELD";
+                cerr << "now SHIELD" << endl;
+            }
         }
 
         // You have to output the target position
         // followed by the power (0 <= thrust <= 100)
         // i.e.: "x y thrust"
 
-        cout << target.x << " " << target.y << " " << thrust_text << endl;
-        podLastPos = podPos;
+        // output command handling
+
+        for (auto & pod : podList)
+        {
+            cout << pod.target.x << " " << pod.target.y << " " << pod.thrustText << endl;
+        }
     }
 }
