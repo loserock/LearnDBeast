@@ -183,16 +183,16 @@ int main()
             pod.target = nextCheckPos;
             bool doShield = false;
             // optimizing target position:
-            if (nextCheckDist > 1000)
+            if (nextCheckDist > 1200)
             {
                 Point reqSteering = normWithMul(nextCheckRelPos, pod.speed);
                 Point correction = reqSteering - pod.steering;
                 pod.target += correction;
             }
-            else if (nextCheckDist < 800 /* && pod steering toward the next checkpoint */)
+            else if (nextCheckDist < 900 /* && pod steering toward the next checkpoint */)
             {
                 pod.target = afterNextCheckPos;
-                if (oppDist < 600)
+                if (oppDist < 700)
                     doShield = true;
             }
 
