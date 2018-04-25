@@ -47,14 +47,14 @@ Point operator- (const Point p1, const Point p2)
     return {p1.x - p2.x, p1.y - p2.y};
 }
 
-int operator* (const Point p1, const Point p2)
+double operator* (const Point p1, const Point p2)
 {
-    return p1.x * p2.x + p1.y * p2.y;
+    return (double)p1.x * (double)p2.x + (double)p1.y * (double)p2.y;
 }
 
 double len(const Point p)
 {
-    return sqrt(p.x * p.x + p.y * p.y);
+    return sqrt(p * p);
 }
 
 Point normWithMul(const Point p, const double mul)
@@ -94,6 +94,7 @@ struct PodData
     int nextCheckId{0};
     int speed{-1};
     int boostLeft{-1};
+    Point dirNorm{UNDEF_INT, UNDEF_INT};
     Point target{UNDEF_INT, UNDEF_INT};
     bool checkpointReached = false;
     string thrustText;
@@ -102,7 +103,7 @@ struct PodData
 static void fillExtraPodData(PodData & pod, const PodData * prevState = nullptr)
 {
     pod.speed = len(pod.steering);
-
+    pod.dirNorm = RotateWithAngle({+100,0}, -pod.dirAngle);
     // TODO calculate extra datas from prev state, eg. acceleration, realSteering
     if (prevState)
     {
@@ -169,7 +170,8 @@ int main()
             const Point afterNextCheckPos = (pod.nextCheckId < numOfChecks - 1 ? checkpointList[pod.nextCheckId + 1] : checkpointList[0]);
             Point nextCheckRelPos = nextCheckPos - pod.pos;
             int nextCheckDist = len(nextCheckRelPos);
-            cerr << "Pod speed vec: " << pod.steering.x << " " << pod.steering.y << endl;
+            cerr << "Pod heading vec: " << pod.dirNorm.x << " " << pod.dirNorm.y << endl;
+            cerr << "Pod real speed vec: " << pod.steering.x << " " << pod.steering.y << endl;
             cerr << "Pod speed: " << pod.speed << endl;
 
             pod.target = nextCheckPos;
@@ -189,7 +191,8 @@ int main()
             }
 
             int thrust = 0;
-            int nextCheckRelAngle = angle(pod.steering, nextCheckRelPos);
+            int nextCheckRelAngle = angle(pod.dirNorm, nextCheckRelPos);
+            cerr << "next CheckPt rel angle: " << nextCheckRelAngle << endl;
 
             if (abs(nextCheckRelAngle) > 90)
                 thrust = 1;
