@@ -18,6 +18,7 @@ struct Point
     int x;
     int y;
     Point& operator+= (const Point& p);
+    Point& operator*= (const double s);
 };
 
 bool operator== (const Point p1, const Point p2)
@@ -52,6 +53,23 @@ double operator* (const Point p1, const Point p2)
     return (double)p1.x * (double)p2.x + (double)p1.y * (double)p2.y;
 }
 
+Point operator* (const Point p1, const double s)
+{
+    return {(double)p1.x * s, (double)p1.y * s};
+}
+
+Point operator* (const double s, const Point p1)
+{
+    return p1 * s;
+}
+
+Point& Point::operator*= (const double s)
+{
+    this->x *= s;
+    this->y *= s;
+    return *this;
+}
+
 double len(const Point p)
 {
     return sqrt(p * p);
@@ -71,6 +89,11 @@ inline double deg2rad(double deg)
 inline double rad2deg(double rad)
 {
     return rad * 180.0 / M_PI;
+}
+
+int angleOf(Point p)
+{
+    return rad2deg(atan2(p.y, p.x));
 }
 
 int angle(Point p1, Point p2)
@@ -109,6 +132,71 @@ static void fillExtraPodData(PodData & pod, const PodData * prevState = nullptr)
     {
         pod.checkpointReached = (pod.nextCheckId != prevState->nextCheckId);
     }
+}
+
+int getSuggestedThrottleByAngle(const int angle)
+{
+    int a = abs(angle);
+    int thrust = 100;
+    if (a > 90)
+        thrust = 1;
+    else if (a > 60)
+        thrust = 50;
+    else if (a > 30)
+        thrust = 75;
+    else
+        thrust = 100;
+    return thrust;
+}
+
+void iterateOneTurn(PodData &pod)
+{
+    const double friction = 0.85;
+    const int rotationSpeed = 18;
+    // frictioning the latest speed vector
+    pod.steering *= friction;
+    // rotate the heading vector toward the next target with rotation speed
+    Point pod2target = pod.target - pod.pos;
+    if (angle(pod.dirNorm, pod.target - pod.pos) < rotationSpeed)
+    {
+        pod.dirNorm = normWithMul(pod2target, pod.speed);
+    }
+    else
+    {
+        int c = (angleOf(pod2target) < angleOf(pod.dirNorm)) ? -1 : 1;
+        pod.dirNorm = RotateWithAngle(pod.dirNorm, c * rotationSpeed);
+    }
+    // calc additional speed, normWithMul it to the heading vector
+    double t = getSuggestedThrottleByAngle(angle(pod.dirNorm, pod2target));
+    Point acc = normWithMul(pod.dirNorm, t);
+    // add the acceleration to the current steering
+    pod.steering += acc;
+    // moving by steering
+    pod.pos += pod.steering;
+}
+
+bool isTouchingCheckIfTurningNow(const PodData &pod, const Point nextCheckPos, const Point afterNextCheckPos)
+{
+    const int touchingDistance = 500; // 600 is the checkpoint radius
+    const int maxIterationSteps = 20;
+    int distanceIncreasingTurnLimit = 3;
+    PodData testPod = pod;
+    testPod.target = afterNextCheckPos;
+
+    int dist = len(testPod.pos - nextCheckPos);
+    for (int i = 0; i < maxIterationSteps; ++i)
+    {
+        iterateOneTurn(testPod);
+        int currDist = len(testPod.pos - nextCheckPos);
+        if (currDist < touchingDistance)
+            return true;
+        if (currDist > dist)
+            --distanceIncreasingTurnLimit;
+        if (distanceIncreasingTurnLimit <= 0)
+            break;
+        dist = currDist;
+    }
+    return false;
 }
 
 int main()
@@ -165,7 +253,7 @@ int main()
         
         for (auto & pod : podList)
         {
-            // basic AI from pod_ai_1.cpp
+            // basic AI based on pod_ai_1.cpp
 
             auto oppClosest = min_element(oppList.cbegin(), oppList.cend(),
                 [&pod](const PodData &p1, const PodData &p2) { return len(p1.pos - pod.pos) < len(p2.pos - pod.pos); });
@@ -189,34 +277,24 @@ int main()
                 Point correction = reqSteering - pod.steering;
                 pod.target += correction;
             }
-            else if (nextCheckDist < 900 /* && pod steering toward the next checkpoint */)
+            if (nextCheckDist < 4000 && isTouchingCheckIfTurningNow(pod, nextCheckPos, afterNextCheckPos))
             {
                 pod.target = afterNextCheckPos;
+                cerr << "drifting enough to reach CheckPt" << endl;
                 if (oppDist < 700)
                     doShield = true;
             }
 
             int thrust = 0;
             int nextCheckRelAngle = angle(pod.dirNorm, nextCheckRelPos);
+            int nextTargetRelAngle = angle(pod.dirNorm, pod.target - pod.pos);
             cerr << "next CheckPt rel dir: " << nextCheckRelPos.x << " " << nextCheckRelPos.y << endl;
-            cerr << "next CheckPt rel angle: " << nextCheckRelAngle << endl;
+            cerr << "next target rel angle: " << nextCheckRelAngle << endl;
 
             if (turn < 2)
                 thrust = 100;
-            else if (abs(nextCheckRelAngle) > 90)
-                thrust = 1;
-            else if (nextCheckDist < 500)
-                thrust = 25;
-            else if (nextCheckDist < 1000)
-                thrust = 50;
-            else if (nextCheckDist < 2000)
-                thrust = 75;
-            else if (abs(nextCheckRelAngle) > 60)
-                thrust = 50;
-            else if (abs(nextCheckRelAngle) > 30)
-                thrust = 75;
             else
-                thrust = 100;
+                thrust = getSuggestedThrottleByAngle(nextTargetRelAngle);
 
             pod.thrustText = to_string(thrust);
 
