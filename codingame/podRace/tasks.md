@@ -23,12 +23,21 @@
 
 ### Teamwork
 
+ - First, we need a global collision prediction class or function.
+ - Hitting the teammate from behind can be good is he is the current leader.
+ - [] First, gessing the current queue of my pods, by: next target checkpoint, OR closer to the next checkpoint, OR lower pod index.
+ - [] The second pod shall lower the throttle (except the collision is good for the leader).
+ - [] Implementing an avoidance steering mechanism.
+
 ### Engaging with rivals
 
 #### Shield usage
 
  - Check the benefit of shielding in every turn!
  - Enemy close: with the next predicted positions (positions and current steering)
+ - [] First implement a global collision prediction: iterating all pods for a few turn
+ - [] Shielding based on the collision benefits (hit from behind could be better without shield)
+ - [] Secondly, collision can be good or bad for the enemy, compare distance advangate and disadvantage.
 
 ### Others
 
