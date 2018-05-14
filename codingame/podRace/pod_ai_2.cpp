@@ -149,6 +149,7 @@ int getSuggestedThrottleByAngle(const int angle)
     return thrust;
 }
 
+// TODO the turning prediction strategy is not equal with the real one
 void iterateOneTurn(PodData &pod)
 {
     const double friction = 0.85;
