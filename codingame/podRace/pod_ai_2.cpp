@@ -176,6 +176,7 @@ void iterateOneTurn(PodData &pod)
     pod.pos += pod.steering;
 }
 
+// TODO shall return with a param number (how many turn until touching or other quality factor)
 bool isTouchingCheckIfTurningNow(const PodData &pod, const Point nextCheckPos, const Point afterNextCheckPos)
 {
     const int touchingDistance = 500; // 600 is the checkpoint radius
