@@ -6,10 +6,6 @@
 
 using namespace std;
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
 
 #define UNDEF_INT -100000
 
